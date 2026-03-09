@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>九五优品二手 - 购物车</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- 头部 -->
+    <header class="header">
+      <div class="header-content">
+        <div class="header-title">购物车</div>
+        <div class="header-edit" id="editBtn">编辑</div>
+      </div>
+    </header>
+
+    <!-- 主内容 -->
+    <main class="main-content">
+      <!-- 购物车列表 -->
+      <div class="cart-list" id="cartList">
+        <!-- 购物车商品由JS动态生成 -->
+      </div>
+
+      <!-- 空购物车提示 -->
+      <div class="empty-cart" id="emptyCart" style="display: none">
+        <div class="empty-icon">
+          <i class="fas fa-shopping-cart"></i>
+        </div>
+        <p>购物车还是空的</p>
+        <a href="category.html" class="btn btn-primary">去逛逛</a>
+      </div>
+    </main>
+
+    <!-- 结算栏 -->
+    <div class="cart-footer" id="cartFooter">
+      <div class="cart-select-all">
+        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" />
+        <label for="selectAll">全选</label>
+      </div>
+      <div class="cart-total">合计：<span id="totalPrice">¥0.00</span></div>
+      <button class="btn btn-primary" onclick="goToCheckout()" id="checkoutBtn">
+        去结算(0)
+      </button>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <i class="fas fa-home nav-icon"></i>
+        <span>首页</span>
+      </a>
+      <a href="category.html" class="nav-item">
+        <i class="fas fa-th-large nav-icon"></i>
+        <span>分类</span>
+      </a>
+      <a href="cart.html" class="nav-item active">
+        <i class="fas fa-shopping-cart nav-icon"></i>
+        <span>购物车</span>
+      </a>
+      <a href="user.html" class="nav-item">
+        <i class="fas fa-user nav-icon"></i>
+        <span>我的</span>
+      </a>
+    </nav>
+
+    <script src="js/data.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+      let isEditMode = false;
+      let cart = storage.getCart();
+
+      document.addEventListener("DOMContentLoaded", function () {
+        renderCart();
+        updateCartTotal();
+
+        // 编辑按钮点击事件
+        document.getElementById("editBtn").onclick = function () {
+          isEditMode = !isEditMode;
+          this.textContent = isEditMode ? "完成" : "编辑";
+          updateCheckoutButton();
+        };
+      });
+
+      // 渲染购物车
+      function renderCart() {
+        const cartList = document.getElementById("cartList");
+        const emptyCart = document.getElementById("emptyCart");
+
+        if (cart.length === 0) {
+          cartList.style.display = "none";
+          emptyCart.style.display = "block";
+          return;
+        }
+
+        emptyCart.style.display = "none";
+        cartList.style.display = "block";
+        cartList.innerHTML = "";
+
+        // 按时间排序（最新的在前面）
+        cart
+          .sort((a, b) => b.id - a.id)
+          .forEach((item) => {
+            const itemElement = document.createElement("div");
+            itemElement.className = "cart-item";
+            itemElement.innerHTML = `
+                    <input type="checkbox" class="cart-checkbox" ${item.selected ? "checked" : ""} 
+                           onchange="toggleItemSelect(${item.id}, this.checked)">
+                    <img src="${item.image}" alt="${item.name}" class="cart-item-img" onerror="this.src='images/default-product.jpg'">
+                    <div class="cart-item-info">
+                        <h3 class="cart-item-title">${item.name}</h3>
+                        <div class="cart-item-price">${formatPrice(item.price)}</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn" onclick="updateQuantity(${item.id}, ${item.quantity - 1})">-</button>
+                            <input type="number" class="quantity-input" value="${item.quantity}" 
+                                   min="1" onchange="updateQuantity(${item.id}, parseInt(this.value))">
+                            <button class="quantity-btn" onclick="updateQuantity(${item.id}, ${item.quantity + 1})">+</button>
+                            ${
+                              isEditMode
+                                ? `
+                                <button class="btn btn-small" onclick="removeItem(${item.id})" style="margin-left: auto; background: #ff4444; color: white;">
+                                    <i class="fas fa-trash"></i> 删除
+                                </button>
+                            `
+                                : ""
+                            }
+                        </div>
+                    </div>
+                `;
+            cartList.appendChild(itemElement);
+          });
+      }
+
+      // 更新商品数量
+      function updateQuantity(id, quantity) {
+        if (quantity < 1) quantity = 1;
+        cart = storage.updateCartItem(id, quantity);
+        renderCart();
+        updateCartTotal();
+      }
+
+      // 移除商品
+      function removeItem(id) {
+        cart = storage.removeFromCart(id);
+        renderCart();
+        updateCartTotal();
+      }
+
+      // 切换商品选中
+      function toggleItemSelect(id, checked) {
+        const cartData = storage.getCart();
+        const item = cartData.find((item) => item.id === id);
+        if (item) {
+          item.selected = checked;
+          storage.saveCart(cartData);
+          updateCartTotal();
+        }
+      }
+
+      // 全选/取消全选
+      function toggleSelectAll() {
+        const selectAll = document.getElementById("selectAll");
+        const checked = selectAll.checked;
+        storage.toggleSelectAll(checked);
+        renderCart();
+        updateCartTotal();
+      }
+
+      // 更新购物车总计
+      function updateCartTotal() {
+        const selectedItems = storage.getSelectedItems();
+        const total = selectedItems.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
+        );
+        const selectedCount = selectedItems.reduce(
+          (count, item) => count + item.quantity,
+          0,
+        );
+
+        document.getElementById("totalPrice").textContent = formatPrice(total);
+        updateCheckoutButton(selectedCount);
+
+        // 更新全选状态
+        const allItems = storage.getCart();
+        const allSelected =
+          allItems.length > 0 && allItems.every((item) => item.selected);
+        document.getElementById("selectAll").checked = allSelected;
+      }
+
+      // 更新结算按钮
+      function updateCheckoutButton(count) {
+        const btn = document.getElementById("checkoutBtn");
+        if (isEditMode) {
+          btn.textContent = "删除选中";
+          btn.style.background = "#ff4444";
+        } else {
+          const selectedCount = storage
+            .getSelectedItems()
+            .reduce((sum, item) => sum + item.quantity, 0);
+          btn.textContent = `去结算(${selectedCount})`;
+          btn.style.background = "";
+        }
+      }
+
+      // 去结算
+      function goToCheckout() {
+        const selectedItems = storage.getSelectedItems();
+        if (selectedItems.length === 0) {
+          showToast("请选择要结算的商品");
+          return;
+        }
+
+        if (isEditMode) {
+          // 删除选中商品
+          selectedItems.forEach((item) => {
+            storage.removeFromCart(item.id);
+          });
+          cart = storage.getCart();
+          renderCart();
+          updateCartTotal();
+          showToast("删除成功");
+        } else {
+          // 去结算
+          navigateTo("order.html");
+        }
+      }
+
+      // 添加CSS
+      const style = document.createElement("style");
+      style.textContent = `
+            .cart-list {
+                padding: 10px;
+            }
+            
+            .empty-cart {
+                text-align: center;
+                padding: 60px 20px;
+            }
+            
+            .empty-icon {
+                font-size: 60px;
+                color: var(--jd-border);
+                margin-bottom: 20px;
+            }
+            
+            .empty-cart p {
+                color: var(--jd-text-light);
+                margin-bottom: 20px;
+            }
+            
+            .cart-footer {
+                position: fixed;
+                bottom: 60px;
+                left: 0;
+                right: 0;
+                background: var(--jd-white);
+                padding: 10px 15px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                border-top: 1px solid var(--jd-border);
+                z-index: 1000;
+                max-width: 750px;
+                margin: 0 auto;
+            }
+            
+            .cart-select-all {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .cart-total {
+                flex: 1;
+                text-align: right;
+                padding-right: 15px;
+                font-size: 16px;
+                font-weight: bold;
+            }
+            
+            .cart-total span {
+                color: var(--jd-price);
+            }
+            
+            .header-edit {
+                font-size: 16px;
+                cursor: pointer;
+            }
+        `;
+      document.head.appendChild(style);
+    </script>
+  </body>
+</html>

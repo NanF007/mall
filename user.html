@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>九五优品二手 - 个人中心</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- 头部 -->
+    <header class="header" style="background: transparent; position: relative">
+      <div class="header-content">
+        <div class="header-title">个人中心</div>
+        <div class="header-settings">
+          <i class="fas fa-cog"></i>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主内容 -->
+    <main class="main-content" style="padding-top: 0">
+      <!-- 用户信息 -->
+      <section class="user-header">
+        <div class="user-info">
+          <div class="user-avatar">
+            <img
+              src="images/avatar.jpg"
+              alt="头像"
+              onerror="this.src = 'images/default-avatar.jpg'"
+            />
+          </div>
+          <div>
+            <h2 class="user-name">${userInfo.name}</h2>
+            <p class="user-id">ID: ${userInfo.userId}</p>
+            <p class="user-phone">${userInfo.phone}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 订单状态 -->
+      <div class="container">
+        <div class="order-status">
+          <a href="#orders?status=all" class="status-item">
+            <div class="status-icon">
+              <i class="fas fa-list"></i>
+            </div>
+            <span>全部订单</span>
+          </a>
+          <a href="#orders?status=pending" class="status-item">
+            <div class="status-icon">
+              <i class="fas fa-truck"></i>
+            </div>
+            <span>待发货</span>
+          </a>
+          <a href="#orders?status=shipping" class="status-item">
+            <div class="status-icon">
+              <i class="fas fa-shipping-fast"></i>
+            </div>
+            <span>待收货</span>
+          </a>
+          <a href="#orders?status=refund" class="status-item">
+            <div class="status-icon">
+              <i class="fas fa-undo"></i>
+            </div>
+            <span>售后/退款</span>
+          </a>
+          <a href="#orders?status=review" class="status-item">
+            <div class="status-icon">
+              <i class="fas fa-star"></i>
+            </div>
+            <span>待评价</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- 订单列表 -->
+      <div class="container">
+        <h2 class="module-title">最近订单</h2>
+        <div class="order-list" id="orderList">
+          <!-- 订单由JS动态生成 -->
+        </div>
+      </div>
+
+      <!-- 功能菜单 -->
+      <div class="menu-list">
+        <a href="#address" class="menu-item">
+          <span><i class="fas fa-map-marker-alt"></i> 收货地址</span>
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        <a href="#coupon" class="menu-item">
+          <span><i class="fas fa-ticket-alt"></i> 优惠券</span>
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        <a href="#wallet" class="menu-item">
+          <span><i class="fas fa-wallet"></i> 我的钱包</span>
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        <a href="#collection" class="menu-item">
+          <span><i class="fas fa-heart"></i> 我的收藏</span>
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      </div>
+
+      <!-- 服务与客服 -->
+      <div class="menu-list">
+        <a
+          href="javascript:;"
+          onclick="showToast('客服电话：400-123-4567')"
+          class="menu-item"
+        >
+          <span><i class="fas fa-phone"></i> 联系客服</span>
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        <a href="#about" class="menu-item">
+          <span><i class="fas fa-info-circle"></i> 关于我们</span>
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        <a href="#help" class="menu-item">
+          <span><i class="fas fa-question-circle"></i> 帮助中心</span>
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        <a href="#settings" class="menu-item">
+          <span><i class="fas fa-cog"></i> 设置</span>
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      </div>
+
+      <!-- 退出登录 -->
+      <div class="container" style="padding: 20px">
+        <button
+          class="btn btn-block"
+          onclick="showToast('已退出登录')"
+          style="background: #f0f0f0; color: var(--jd-text)"
+        >
+          退出登录
+        </button>
+      </div>
+    </main>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <i class="fas fa-home nav-icon"></i>
+        <span>首页</span>
+      </a>
+      <a href="category.html" class="nav-item">
+        <i class="fas fa-th-large nav-icon"></i>
+        <span>分类</span>
+      </a>
+      <a href="cart.html" class="nav-item">
+        <i class="fas fa-shopping-cart nav-icon"></i>
+        <span>购物车</span>
+      </a>
+      <a href="user.html" class="nav-item active">
+        <i class="fas fa-user nav-icon"></i>
+        <span>我的</span>
+      </a>
+    </nav>
+
+    <script src="js/data.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        renderOrders();
+
+        // 添加CSS
+        const style = document.createElement("style");
+        style.textContent = `
+                .order-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+                
+                .order-card {
+                    background: var(--jd-white);
+                    border-radius: 8px;
+                    padding: 15px;
+                    text-decoration: none;
+                    color: var(--jd-text);
+                }
+                
+                .order-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 10px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid var(--jd-border);
+                }
+                
+                .order-id {
+                    color: var(--jd-text-light);
+                    font-size: 12px;
+                }
+                
+                .order-status-badge {
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    font-size: 12px;
+                }
+                
+                .status-pending { background: #fff3cd; color: #856404; }
+                .status-shipping { background: #d1ecf1; color: #0c5460; }
+                .status-delivered { background: #d4edda; color: #155724; }
+                .status-completed { background: #cce5ff; color: #004085; }
+                
+                .order-item {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 8px;
+                }
+                
+                .order-item:last-child {
+                    margin-bottom: 0;
+                }
+                
+                .order-item-img {
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 4px;
+                    margin-right: 10px;
+                }
+                
+                .order-footer {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-top: 10px;
+                    padding-top: 10px;
+                    border-top: 1px solid var(--jd-border);
+                }
+                
+                .order-total {
+                    font-weight: bold;
+                    color: var(--jd-price);
+                }
+                
+                .order-actions {
+                    display: flex;
+                    gap: 8px;
+                }
+                
+                .action-btn {
+                    padding: 4px 12px;
+                    border: 1px solid var(--jd-border);
+                    border-radius: 4px;
+                    text-decoration: none;
+                    font-size: 12px;
+                }
+                
+                .action-btn.primary {
+                    background: var(--jd-red);
+                    color: white;
+                    border: none;
+                }
+            `;
+        document.head.appendChild(style);
+      });
+
+      // 渲染订单列表
+      function renderOrders() {
+        const orderList = document.getElementById("orderList");
+
+        if (mallData.orders.length === 0) {
+          orderList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--jd-text-light);">
+                        <i class="fas fa-file-alt" style="font-size: 40px; margin-bottom: 10px;"></i>
+                        <p>暂无订单</p>
+                    </div>
+                `;
+          return;
+        }
+
+        mallData.orders.forEach((order) => {
+          const orderElement = document.createElement("a");
+          orderElement.href = "#";
+          orderElement.className = "order-card";
+          orderElement.innerHTML = `
+                    <div class="order-header">
+                        <div class="order-id">订单号：${order.id}</div>
+                        <div class="order-status-badge status-${getStatusClass(order.status)}">${order.status}</div>
+                    </div>
+                    <div class="order-items">
+                        ${order.items
+                          .map(
+                            (item) => `
+                            <div class="order-item">
+                                <img src="images/default-product.jpg" alt="${item.name}" class="order-item-img">
+                                <div style="flex: 1;">
+                                    <div>${item.name} × ${item.quantity}</div>
+                                    <div style="color: var(--jd-price); font-weight: bold;">${formatPrice(item.price)}</div>
+                                </div>
+                            </div>
+                        `,
+                          )
+                          .join("")}
+                    </div>
+                    <div class="order-footer">
+                        <div class="order-total">合计：${formatPrice(order.total)}</div>
+                        <div class="order-actions">
+                            ${
+                              order.status === "待发货"
+                                ? `
+                                <a href="#" class="action-btn" onclick="event.preventDefault(); showToast('提醒发货成功')">提醒发货</a>
+                            `
+                                : ""
+                            }
+                            ${
+                              order.status === "待收货"
+                                ? `
+                                <a href="#" class="action-btn primary" onclick="event.preventDefault(); showToast('确认收货成功')">确认收货</a>
+                            `
+                                : ""
+                            }
+                            ${
+                              order.status === "已完成"
+                                ? `
+                                <a href="#" class="action-btn" onclick="event.preventDefault(); navigateTo('#review')">评价</a>
+                            `
+                                : ""
+                            }
+                        </div>
+                    </div>
+                `;
+          orderList.appendChild(orderElement);
+        });
+      }
+
+      // 获取状态样式类
+      function getStatusClass(status) {
+        switch (status) {
+          case "待发货":
+            return "pending";
+          case "待收货":
+            return "shipping";
+          case "已完成":
+            return "completed";
+          default:
+            return "pending";
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>九五优品二手 - 订单结算</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- 头部 -->
+    <header class="header">
+      <div class="header-content">
+        <a href="javascript:history.back()" class="header-back">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+        <div class="header-title">订单结算</div>
+      </div>
+    </header>
+
+    <!-- 主内容 -->
+    <main class="main-content">
+      <!-- 收货地址 -->
+      <div class="address-section">
+        <div class="address-card" onclick="selectAddress()">
+          <div class="address-info">
+            <div class="address-user">
+              <span id="userName">${userInfo.name}</span>
+              <span id="userPhone">${userInfo.phone}</span>
+            </div>
+            <div class="address-detail" id="addressDetail">
+              ${userInfo.address}
+            </div>
+          </div>
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      </div>
+
+      <!-- 商品清单 -->
+      <div class="order-section">
+        <h3 class="section-title">商品清单</h3>
+        <div class="order-items" id="orderItems">
+          <!-- 商品由JS动态生成 -->
+        </div>
+      </div>
+
+      <!-- 配送方式 -->
+      <div class="delivery-section">
+        <h3 class="section-title">配送方式</h3>
+        <div class="delivery-options">
+          <div class="delivery-option active">
+            <i class="fas fa-shipping-fast"></i>
+            <span>快递配送</span>
+            <span class="delivery-price">包邮</span>
+          </div>
+          <div class="delivery-option">
+            <i class="fas fa-store"></i>
+            <span>门店自提</span>
+            <span class="delivery-price">免费</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 支付方式 -->
+      <div class="payment-section">
+        <h3 class="section-title">支付方式</h3>
+        <div class="payment-options">
+          <div class="payment-option active" onclick="selectPayment('alipay')">
+            <div class="payment-info">
+              <i class="fab fa-alipay payment-icon" style="color: #1678ff"></i>
+              <span>支付宝支付</span>
+            </div>
+            <input type="radio" name="payment" checked />
+          </div>
+          <div class="payment-option" onclick="selectPayment('wechat')">
+            <div class="payment-info">
+              <i class="fab fa-weixin payment-icon" style="color: #09bb07"></i>
+              <span>微信支付</span>
+            </div>
+            <input type="radio" name="payment" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 优惠券 -->
+      <div class="coupon-section" onclick="selectCoupon()">
+        <div class="coupon-item">
+          <span>优惠券</span>
+          <div class="coupon-info">
+            <span id="selectedCoupon">无可用优惠券</span>
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 订单信息 -->
+      <div class="order-info-section">
+        <h3 class="section-title">订单信息</h3>
+        <div class="order-info">
+          <div class="info-row">
+            <span>商品金额</span>
+            <span id="productAmount">¥0.00</span>
+          </div>
+          <div class="info-row">
+            <span>运费</span>
+            <span id="shippingFee">¥0.00</span>
+          </div>
+          <div class="info-row">
+            <span>优惠券</span>
+            <span id="couponDiscount">-¥0.00</span>
+          </div>
+          <div class="info-row total">
+            <span>实付款</span>
+            <span
+              id="totalAmount"
+              style="color: var(--jd-price); font-size: 20px; font-weight: bold"
+              >¥0.00</span
+            >
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 底部结算栏 -->
+    <div class="checkout-footer">
+      <div class="total-price">实付：<span id="finalTotal">¥0.00</span></div>
+      <button class="btn btn-primary btn-block" onclick="submitOrder()">
+        提交订单
+      </button>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+      let selectedPayment = "alipay";
+      let selectedCoupon = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        renderOrderItems();
+        calculateTotal();
+
+        // 添加CSS样式
+        const style = document.createElement("style");
+        style.textContent = `
+                .main-content {
+                    padding-bottom: 120px;
+                }
+                
+                .address-section {
+                    padding: 15px;
+                    background: var(--jd-white);
+                    margin-bottom: 10px;
+                }
+                
+                .address-card {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 15px;
+                    background: linear-gradient(135deg, #f8f8f8, #f0f0f0);
+                    border-radius: 8px;
+                    cursor: pointer;
+                }
+                
+                .address-user {
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                    margin-bottom: 8px;
+                }
+                
+                .address-user span:first-child {
+                    font-weight: bold;
+                }
+                
+                .address-detail {
+                    color: var(--jd-text-light);
+                    line-height: 1.4;
+                }
+                
+                .order-section,
+                .delivery-section,
+                .payment-section,
+                .coupon-section,
+                .order-info-section {
+                    background: var(--jd-white);
+                    padding: 15px;
+                    margin-bottom: 10px;
+                }
+                
+                .section-title {
+                    font-size: 16px;
+                    font-weight: 600;
+                    margin-bottom: 15px;
+                    padding-left: 8px;
+                    border-left: 3px solid var(--jd-red);
+                }
+                
+                .order-items {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+                
+                .order-item {
+                    display: flex;
+                    align-items: center;
+                    padding: 10px 0;
+                    border-bottom: 1px solid var(--jd-border);
+                }
+                
+                .order-item:last-child {
+                    border-bottom: none;
+                }
+                
+                .order-item-img {
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 6px;
+                    margin-right: 12px;
+                }
+                
+                .order-item-info {
+                    flex: 1;
+                }
+                
+                .order-item-title {
+                    font-size: 14px;
+                    margin-bottom: 6px;
+                    line-height: 1.4;
+                }
+                
+                .order-item-price {
+                    color: var(--jd-price);
+                    font-weight: bold;
+                }
+                
+                .order-item-quantity {
+                    color: var(--jd-text-light);
+                    font-size: 12px;
+                }
+                
+                .delivery-options {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+                
+                .delivery-option {
+                    display: flex;
+                    align-items: center;
+                    padding: 12px;
+                    border: 2px solid var(--jd-border);
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                }
+                
+                .delivery-option.active {
+                    border-color: var(--jd-red);
+                    background: #fff5f5;
+                }
+                
+                .delivery-option i {
+                    width: 30px;
+                    font-size: 20px;
+                    color: var(--jd-text-light);
+                }
+                
+                .delivery-option.active i {
+                    color: var(--jd-red);
+                }
+                
+                .delivery-price {
+                    margin-left: auto;
+                    color: var(--jd-red);
+                    font-weight: bold;
+                }
+                
+                .payment-options {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+                
+                .payment-option {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 12px;
+                    border: 2px solid var(--jd-border);
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                }
+                
+                .payment-option.active {
+                    border-color: var(--jd-red);
+                    background: #fff5f5;
+                }
+                
+                .payment-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+                
+                .payment-icon {
+                    width: 30px;
+                    font-size: 24px;
+                }
+                
+                .coupon-item {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 12px 0;
+                    cursor: pointer;
+                }
+                
+                .coupon-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    color: var(--jd-text-light);
+                }
+                
+                .order-info {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+                
+                .info-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 8px 0;
+                }
+                
+                .info-row.total {
+                    border-top: 1px solid var(--jd-border);
+                    padding-top: 12px;
+                    margin-top: 8px;
+                }
+                
+                .checkout-footer {
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    background: var(--jd-white);
+                    padding: 15px;
+                    border-top: 1px solid var(--jd-border);
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 15px;
+                    z-index: 1000;
+                    max-width: 750px;
+                    margin: 0 auto;
+                }
+                
+                .total-price {
+                    font-size: 16px;
+                    font-weight: bold;
+                    flex: 1;
+                }
+                
+                .btn-block {
+                    flex: 2;
+                    padding: 12px 24px;
+                    font-size: 16px;
+                    font-weight: 600;
+                }
+            `;
+        document.head.appendChild(style);
+      });
+
+      // 渲染订单商品
+      function renderOrderItems() {
+        const orderItems = document.getElementById("orderItems");
+        const selectedItems = storage.getSelectedItems();
+
+        if (selectedItems.length === 0) {
+          orderItems.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--jd-text-light);">
+                        <p>购物车中没有选中的商品</p>
+                        <a href="cart.html" class="btn btn-primary" style="margin-top: 10px;">去购物车选择</a>
+                    </div>
+                `;
+          return;
+        }
+
+        selectedItems.forEach((item) => {
+          const itemElement = document.createElement("div");
+          itemElement.className = "order-item";
+          itemElement.innerHTML = `
+                    <img src="${item.image}" alt="${item.name}" class="order-item-img" onerror="this.src='images/default-product.jpg'">
+                    <div class="order-item-info">
+                        <div class="order-item-title">${item.name}</div>
+                        <div class="order-item-price">${formatPrice(item.price)}</div>
+                        <div class="order-item-quantity">×${item.quantity}</div>
+                    </div>
+                `;
+          orderItems.appendChild(itemElement);
+        });
+      }
+
+      // 计算总价
+      function calculateTotal() {
+        const selectedItems = storage.getSelectedItems();
+        const productAmount = selectedItems.reduce(
+          (total, item) => total + item.price * item.quantity,
+          0,
+        );
+        const shippingFee = 0; // 包邮
+        const couponDiscount = selectedCoupon ? selectedCoupon.amount : 0;
+        const totalAmount = productAmount + shippingFee - couponDiscount;
+
+        // 更新显示
+        document.getElementById("productAmount").textContent =
+          formatPrice(productAmount);
+        document.getElementById("shippingFee").textContent =
+          formatPrice(shippingFee);
+        document.getElementById("couponDiscount").textContent =
+          `-${formatPrice(couponDiscount)}`;
+        document.getElementById("totalAmount").textContent =
+          formatPrice(totalAmount);
+        document.getElementById("finalTotal").textContent =
+          formatPrice(totalAmount);
+      }
+
+      // 选择支付方式
+      function selectPayment(payment) {
+        selectedPayment = payment;
+
+        // 更新UI
+        document.querySelectorAll(".payment-option").forEach((option) => {
+          option.classList.remove("active");
+          option.querySelector('input[type="radio"]').checked = false;
+        });
+
+        const selectedOption = document.querySelector(
+          `[onclick="selectPayment('${payment}')"]`,
+        );
+        if (selectedOption) {
+          selectedOption.classList.add("active");
+          selectedOption.querySelector('input[type="radio"]').checked = true;
+        }
+      }
+
+      // 选择地址
+      function selectAddress() {
+        showToast("地址选择功能开发中");
+      }
+
+      // 选择优惠券
+      function selectCoupon() {
+        showToast("优惠券选择功能开发中");
+      }
+
+      // 提交订单
+      function submitOrder() {
+        const selectedItems = storage.getSelectedItems();
+        if (selectedItems.length === 0) {
+          showToast("请选择要购买的商品");
+          return;
+        }
+
+        // 模拟支付过程
+        const orderId = "ORD" + Date.now().toString().slice(-8);
+        const orderTotal = storage.getSelectedTotal();
+
+        // 创建订单数据
+        const orderData = {
+          id: orderId,
+          date: new Date().toISOString().split("T")[0],
+          status: "待付款",
+          total: orderTotal,
+          items: selectedItems.map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          payment: selectedPayment,
+        };
+
+        // 保存订单到本地存储
+        saveOrder(orderData);
+
+        // 跳转到支付页面
+        navigateTo(
+          `payment.html?orderId=${orderId}&total=${orderTotal}&payment=${selectedPayment}`,
+        );
+      }
+
+      // 保存订单
+      function saveOrder(orderData) {
+        let orders = JSON.parse(localStorage.getItem("mall_orders") || "[]");
+        orders.unshift(orderData);
+        localStorage.setItem("mall_orders", JSON.stringify(orders));
+
+        // 从购物车中移除已购买的商品
+        const selectedItems = storage.getSelectedItems();
+        selectedItems.forEach((item) => {
+          storage.removeFromCart(item.id);
+        });
+      }
+    </script>
+  </body>
+</html>

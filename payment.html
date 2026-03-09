@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>支付页面 - 九五优品二手</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- 头部 -->
+    <header class="header">
+      <div class="header-content">
+        <a href="javascript:history.back()" class="header-back">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+        <div class="header-title">支付订单</div>
+      </div>
+    </header>
+
+    <!-- 主内容 -->
+    <main class="main-content">
+      <!-- 订单信息 -->
+      <div class="payment-info-section">
+        <div class="order-amount">
+          <div class="amount-label">支付金额</div>
+          <div class="amount-value" id="paymentAmount">¥0.00</div>
+        </div>
+        <div class="order-details">
+          <div class="detail-row">
+            <span>订单编号：</span>
+            <span id="orderId">ORD00000000</span>
+          </div>
+          <div class="detail-row">
+            <span>支付方式：</span>
+            <span id="paymentMethod">支付宝支付</span>
+          </div>
+          <div class="detail-row">
+            <span>创建时间：</span>
+            <span id="createTime">${new Date().toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 支付方式 -->
+      <div class="payment-method-section">
+        <h3 class="section-title">支付方式</h3>
+        <div class="method-grid" id="paymentMethods">
+          <!-- 支付方式由JS动态生成 -->
+        </div>
+      </div>
+
+      <!-- 支付密码 -->
+      <div
+        class="payment-password-section"
+        id="passwordSection"
+        style="display: none"
+      >
+        <h3 class="section-title">输入支付密码</h3>
+        <div class="password-input">
+          <div class="password-dots">
+            <div class="password-dot"></div>
+            <div class="password-dot"></div>
+            <div class="password-dot"></div>
+            <div class="password-dot"></div>
+            <div class="password-dot"></div>
+            <div class="password-dot"></div>
+          </div>
+          <input
+            type="password"
+            id="passwordInput"
+            maxlength="6"
+            style="opacity: 0; position: absolute; width: 1px; height: 1px"
+          />
+        </div>
+      </div>
+
+      <!-- 支付结果 -->
+      <div
+        class="payment-result-section"
+        id="resultSection"
+        style="display: none"
+      >
+        <div class="result-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <h2 class="result-title">支付成功！</h2>
+        <p class="result-desc" id="resultDesc">
+          订单支付成功，正在为您安排发货
+        </p>
+        <div class="result-actions">
+          <a href="user.html" class="btn btn-primary">查看订单</a>
+          <a href="index.html" class="btn">返回首页</a>
+        </div>
+      </div>
+    </main>
+
+    <!-- 支付按钮 -->
+    <div class="payment-footer" id="paymentFooter">
+      <button class="btn btn-primary btn-block" onclick="startPayment()">
+        确认支付
+      </button>
+    </div>
+
+    <!-- 数字键盘 -->
+    <div class="number-pad" id="numberPad" style="display: none">
+      <div class="number-grid">
+        <div class="number-key" onclick="inputNumber(1)">1</div>
+        <div class="number-key" onclick="inputNumber(2)">2</div>
+        <div class="number-key" onclick="inputNumber(3)">3</div>
+        <div class="number-key" onclick="inputNumber(4)">4</div>
+        <div class="number-key" onclick="inputNumber(5)">5</div>
+        <div class="number-key" onclick="inputNumber(6)">6</div>
+        <div class="number-key" onclick="inputNumber(7)">7</div>
+        <div class="number-key" onclick="inputNumber(8)">8</div>
+        <div class="number-key" onclick="inputNumber(9)">9</div>
+        <div class="number-key empty"></div>
+        <div class="number-key" onclick="inputNumber(0)">0</div>
+        <div class="number-key" onclick="deleteNumber()">
+          <i class="fas fa-backspace"></i>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+      let paymentAmount = 0;
+      let orderId = "";
+      let paymentMethod = "alipay";
+      let currentPassword = "";
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // 获取URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        paymentAmount = parseFloat(urlParams.get("total")) || 0;
+        orderId =
+          urlParams.get("orderId") || "ORD" + Date.now().toString().slice(-8);
+        paymentMethod = urlParams.get("payment") || "alipay";
+
+        // 更新显示
+        document.getElementById("paymentAmount").textContent =
+          formatPrice(paymentAmount);
+        document.getElementById("orderId").textContent = orderId;
+        document.getElementById("paymentMethod").textContent =
+          getPaymentMethodName(paymentMethod);
+        document.getElementById("createTime").textContent =
+          new Date().toLocaleString();
+
+        // 渲染支付方式
+        renderPaymentMethods();
+
+        // 添加CSS样式
+        const style = document.createElement("style");
+        style.textContent = `
+                .payment-info-section {
+                    background: var(--jd-white);
+                    padding: 20px 15px;
+                    text-align: center;
+                    margin-bottom: 10px;
+                }
+                
+                .order-amount {
+                    margin-bottom: 20px;
+                }
+                
+                .amount-label {
+                    color: var(--jd-text-light);
+                    font-size: 14px;
+                    margin-bottom: 5px;
+                }
+                
+                .amount-value {
+                    font-size: 36px;
+                    font-weight: bold;
+                    color: var(--jd-price);
+                }
+                
+                .order-details {
+                    border-top: 1px solid var(--jd-border);
+                    padding-top: 20px;
+                }
+                
+                .detail-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 8px 0;
+                    color: var(--jd-text-light);
+                }
+                
+                .payment-method-section {
+                    background: var(--jd-white);
+                    padding: 15px;
+                    margin-bottom: 10px;
+                }
+                
+                .section-title {
+                    font-size: 16px;
+                    font-weight: 600;
+                    margin-bottom: 15px;
+                    padding-left: 8px;
+                    border-left: 3px solid var(--jd-red);
+                }
+                
+                .method-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                    gap: 10px;
+                }
+                
+                .method-item {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    padding: 20px 10px;
+                    border: 2px solid var(--jd-border);
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                }
+                
+                .method-item.active {
+                    border-color: var(--jd-red);
+                    background: #fff5f5;
+                }
+                
+                .method-icon {
+                    font-size: 30px;
+                    margin-bottom: 10px;
+                }
+                
+                .method-name {
+                    font-size: 14px;
+                }
+                
+                .payment-password-section {
+                    background: var(--jd-white);
+                    padding: 20px 15px;
+                    text-align: center;
+                }
+                
+                .password-input {
+                    position: relative;
+                    width: 200px;
+                    margin: 0 auto;
+                }
+                
+                .password-dots {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 20px;
+                }
+                
+                .password-dot {
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 50%;
+                    background: var(--jd-border);
+                }
+                
+                .password-dot.filled {
+                    background: var(--jd-text);
+                }
+                
+                .payment-result-section {
+                    background: var(--jd-white);
+                    padding: 40px 20px;
+                    text-align: center;
+                }
+                
+                .result-icon {
+                    font-size: 60px;
+                    color: #52c41a;
+                    margin-bottom: 20px;
+                }
+                
+                .result-title {
+                    font-size: 24px;
+                    font-weight: bold;
+                    margin-bottom: 10px;
+                }
+                
+                .result-desc {
+                    color: var(--jd-text-light);
+                    margin-bottom: 30px;
+                }
+                
+                .result-actions {
+                    display: flex;
+                    gap: 15px;
+                }
+                
+                .result-actions .btn {
+                    flex: 1;
+                }
+                
+                .payment-footer {
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    background: var(--jd-white);
+                    padding: 15px;
+                    border-top: 1px solid var(--jd-border);
+                    z-index: 1000;
+                    max-width: 750px;
+                    margin: 0 auto;
+                }
+                
+                .number-pad {
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    background: var(--jd-white);
+                    padding: 20px 15px;
+                    border-top: 1px solid var(--jd-border);
+                    z-index: 1001;
+                    max-width: 750px;
+                    margin: 0 auto;
+                }
+                
+                .number-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 1px;
+                    background: var(--jd-border);
+                }
+                
+                .number-key {
+                    background: var(--jd-white);
+                    height: 60px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 20px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    user-select: none;
+                }
+                
+                .number-key:active {
+                    background: var(--jd-bg);
+                }
+                
+                .number-key i {
+                    font-size: 24px;
+                    color: var(--jd-text-light);
+                }
+                
+                .number-key.empty {
+                    background: var(--jd-bg);
+                    cursor: default;
+                }
+            `;
+        document.head.appendChild(style);
+      });
+
+      // 获取支付方式名称
+      function getPaymentMethodName(method) {
+        switch (method) {
+          case "alipay":
+            return "支付宝支付";
+          case "wechat":
+            return "微信支付";
+          default:
+            return "其他支付";
+        }
+      }
+
+      // 渲染支付方式
+      function renderPaymentMethods() {
+        const methods = [
+          {
+            id: "alipay",
+            name: "支付宝",
+            icon: "fab fa-alipay",
+            color: "#1678ff",
+          },
+          {
+            id: "wechat",
+            name: "微信支付",
+            icon: "fab fa-weixin",
+            color: "#09bb07",
+          },
+        ];
+
+        const methodsGrid = document.getElementById("paymentMethods");
+        methodsGrid.innerHTML = "";
+
+        methods.forEach((method) => {
+          const methodItem = document.createElement("div");
+          methodItem.className = `method-item ${method.id === paymentMethod ? "active" : ""}`;
+          methodItem.onclick = () => selectMethod(method.id);
+          methodItem.innerHTML = `
+                    <i class="${method.icon} method-icon" style="color: ${method.color};"></i>
+                    <span class="method-name">${method.name}</span>
+                `;
+          methodsGrid.appendChild(methodItem);
+        });
+      }
+
+      // 选择支付方式
+      function selectMethod(method) {
+        paymentMethod = method;
+        document.getElementById("paymentMethod").textContent =
+          getPaymentMethodName(method);
+        renderPaymentMethods();
+      }
+
+      // 开始支付
+      function startPayment() {
+        // 显示密码输入
+        document.getElementById("passwordSection").style.display = "block";
+        document.getElementById("numberPad").style.display = "block";
+        document.getElementById("paymentFooter").style.display = "none";
+
+        // 焦点到输入框
+        document.getElementById("passwordInput").focus();
+      }
+
+      // 输入数字
+      function inputNumber(num) {
+        if (currentPassword.length >= 6) return;
+
+        currentPassword += num.toString();
+        updatePasswordDots();
+
+        if (currentPassword.length === 6) {
+          setTimeout(() => verifyPassword(), 500);
+        }
+      }
+
+      // 删除数字
+      function deleteNumber() {
+        if (currentPassword.length > 0) {
+          currentPassword = currentPassword.slice(0, -1);
+          updatePasswordDots();
+        }
+      }
+
+      // 更新密码点
+      function updatePasswordDots() {
+        const dots = document.querySelectorAll(".password-dot");
+        dots.forEach((dot, index) => {
+          dot.classList.toggle("filled", index < currentPassword.length);
+        });
+      }
+
+      // 验证密码
+      function verifyPassword() {
+        // 模拟密码验证（实际应为123456）
+        if (currentPassword === "123456") {
+          // 支付成功
+          showPaymentResult(true);
+
+          // 更新订单状态
+          updateOrderStatus("待发货");
+        } else {
+          // 支付失败
+          showPaymentResult(false);
+        }
+      }
+
+      // 显示支付结果
+      function showPaymentResult(success) {
+        document.getElementById("passwordSection").style.display = "none";
+        document.getElementById("numberPad").style.display = "none";
+        document.getElementById("resultSection").style.display = "block";
+
+        if (success) {
+          document.querySelector(".result-icon i").className =
+            "fas fa-check-circle";
+          document.querySelector(".result-icon").style.color = "#52c41a";
+          document.querySelector(".result-title").textContent = "支付成功！";
+          document.getElementById("resultDesc").textContent =
+            `订单 ${orderId} 支付成功，正在为您安排发货`;
+        } else {
+          document.querySelector(".result-icon i").className =
+            "fas fa-times-circle";
+          document.querySelector(".result-icon").style.color = "#ff4d4f";
+          document.querySelector(".result-title").textContent = "支付失败";
+          document.getElementById("resultDesc").textContent =
+            "支付密码错误，请重试";
+        }
+      }
+
+      // 更新订单状态
+      function updateOrderStatus(status) {
+        const orders = JSON.parse(localStorage.getItem("mall_orders") || "[]");
+        const orderIndex = orders.findIndex((order) => order.id === orderId);
+
+        if (orderIndex !== -1) {
+          orders[orderIndex].status = status;
+          localStorage.setItem("mall_orders", JSON.stringify(orders));
+        }
+      }
+    </script>
+  </body>
+</html>

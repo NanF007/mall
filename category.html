@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>九五优品二手 - 分类</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- 头部 -->
+    <header class="header">
+      <div class="header-content">
+        <div class="header-title">商品分类</div>
+        <div class="header-search">
+          <i class="fas fa-search"></i>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主内容 -->
+    <main class="main-content">
+      <!-- 分类导航 -->
+      <div class="category-tabs" id="categoryTabs">
+        <!-- 分类标签由JS生成 -->
+      </div>
+
+      <!-- 商品列表 -->
+      <div class="category-products" id="categoryProducts">
+        <!-- 商品由JS动态生成 -->
+      </div>
+    </main>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item">
+        <i class="fas fa-home nav-icon"></i>
+        <span>首页</span>
+      </a>
+      <a href="category.html" class="nav-item active">
+        <i class="fas fa-th-large nav-icon"></i>
+        <span>分类</span>
+      </a>
+      <a href="cart.html" class="nav-item">
+        <i class="fas fa-shopping-cart nav-icon"></i>
+        <span>购物车</span>
+      </a>
+      <a href="user.html" class="nav-item">
+        <i class="fas fa-user nav-icon"></i>
+        <span>我的</span>
+      </a>
+    </nav>
+
+    <script src="js/data.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const categoryTabs = document.getElementById("categoryTabs");
+        const categoryProducts = document.getElementById("categoryProducts");
+
+        const categories = [
+          { id: "digital", name: "数码产品", icon: "fas fa-headphones" },
+          { id: "phone", name: "手机", icon: "fas fa-mobile-alt" },
+          { id: "computer", name: "电脑", icon: "fas fa-laptop" },
+        ];
+
+        // 渲染分类标签
+        categories.forEach((category, index) => {
+          const tab = document.createElement("div");
+          tab.className = `category-tab ${index === 0 ? "active" : ""}`;
+          tab.dataset.category = category.id;
+          tab.innerHTML = `
+                    <i class="${category.icon}"></i>
+                    <span>${category.name}</span>
+                `;
+          tab.onclick = () => switchCategory(category.id, tab);
+          categoryTabs.appendChild(tab);
+        });
+
+        // 初始显示第一个分类
+        showCategoryProducts("digital");
+
+        // 切换分类
+        function switchCategory(categoryId, clickedTab) {
+          // 更新标签状态
+          document.querySelectorAll(".category-tab").forEach((tab) => {
+            tab.classList.remove("active");
+          });
+          clickedTab.classList.add("active");
+
+          // 显示对应商品
+          showCategoryProducts(categoryId);
+        }
+
+        // 显示分类商品
+        function showCategoryProducts(categoryId) {
+          let products = [];
+          let categoryName = "";
+
+          switch (categoryId) {
+            case "digital":
+              products = mallData.categories["数码产品"];
+              categoryName = "数码产品";
+              break;
+            case "phone":
+              products = mallData.categories["手机"];
+              categoryName = "手机";
+              break;
+            case "computer":
+              products = mallData.categories["电脑"];
+              categoryName = "电脑";
+              break;
+          }
+
+          categoryProducts.innerHTML = `
+                    <h2 class="module-title">${categoryName}</h2>
+                    <div class="waterfall" id="productGrid">
+                        <!-- 商品网格 -->
+                    </div>
+                `;
+
+          const productGrid = document.getElementById("productGrid");
+          products.forEach((product) => {
+            const card = document.createElement("div");
+            card.className = "product-card";
+            card.onclick = () => navigateTo(`detail.html?id=${product.id}`);
+            card.innerHTML = `
+                        <img src="${product.image}" alt="${product.name}" class="product-img" onerror="this.src='images/default-product.jpg'">
+                        <div class="product-info">
+                            <h3 class="product-title">${product.name}</h3>
+                            <div class="product-price">${formatPrice(product.price)}</div>
+                            ${product.type ? `<div class="product-type">类型：${product.type}</div>` : ""}
+                            ${product.condition ? `<div class="product-condition">成色：${product.condition}</div>` : ""}
+                            ${product.specs ? `<div class="product-specs">${product.specs}</div>` : ""}
+                        </div>
+                    `;
+            productGrid.appendChild(card);
+          });
+        }
+
+        // 添加CSS样式
+        const style = document.createElement("style");
+        style.textContent = `
+                .category-tabs {
+                    display: flex;
+                    background: var(--jd-white);
+                    padding: 10px;
+                    border-bottom: 1px solid var(--jd-border);
+                    position: sticky;
+                    top: 44px;
+                    z-index: 100;
+                }
+                
+                .category-tab {
+                    flex: 1;
+                    text-align: center;
+                    padding: 10px 0;
+                    cursor: pointer;
+                    color: var(--jd-text-light);
+                    border-bottom: 2px solid transparent;
+                    transition: all 0.3s;
+                }
+                
+                .category-tab.active {
+                    color: var(--jd-red);
+                    border-bottom-color: var(--jd-red);
+                }
+                
+                .category-tab i {
+                    display: block;
+                    font-size: 20px;
+                    margin-bottom: 5px;
+                }
+                
+                .category-products {
+                    padding: 15px;
+                }
+                
+                .product-type, .product-condition, .product-specs {
+                    font-size: 12px;
+                    color: var(--jd-text-light);
+                    margin-top: 4px;
+                }
+            `;
+        document.head.appendChild(style);
+      });
+    </script>
+  </body>
+</html>

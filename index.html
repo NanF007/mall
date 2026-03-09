@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>九五优品二手 - 首页</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/8.0.0/swiper-bundle.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- 头部 -->
+    <header class="header">
+      <div class="header-content">
+        <div class="header-title">九五优品二手</div>
+        <div class="header-search">
+          <i class="fas fa-search"></i>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主内容 -->
+    <main class="main-content">
+      <!-- 轮播图 -->
+      <section class="container">
+        <div class="swiper-container">
+          <div class="swiper-wrapper">
+            <!-- 轮播图由JS动态生成 -->
+          </div>
+          <div class="swiper-pagination"></div>
+        </div>
+      </section>
+
+      <!-- 最近上新 -->
+      <section class="container">
+        <h2 class="module-title">
+          最近上新
+          <a href="category.html" class="btn btn-small"
+            >查看更多 <i class="fas fa-chevron-right"></i
+          ></a>
+        </h2>
+        <div class="waterfall" id="newProducts">
+          <!-- 新品商品由JS动态生成 -->
+        </div>
+      </section>
+
+      <!-- 推荐榜 -->
+      <section class="container">
+        <h2 class="module-title">热销推荐榜</h2>
+        <div class="rank-list" id="hotProducts">
+          <!-- 推荐商品由JS动态生成 -->
+        </div>
+      </section>
+    </main>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <a href="index.html" class="nav-item active">
+        <i class="fas fa-home nav-icon"></i>
+        <span>首页</span>
+      </a>
+      <a href="category.html" class="nav-item">
+        <i class="fas fa-th-large nav-icon"></i>
+        <span>分类</span>
+      </a>
+      <a href="cart.html" class="nav-item">
+        <i class="fas fa-shopping-cart nav-icon"></i>
+        <span>购物车</span>
+      </a>
+      <a href="user.html" class="nav-item">
+        <i class="fas fa-user nav-icon"></i>
+        <span>我的</span>
+      </a>
+    </nav>
+
+    <script src="js/data.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/8.0.0/swiper-bundle.min.js"></script>
+    <script src="js/common.js"></script>
+    <script>
+      // 初始化轮播图
+      document.addEventListener("DOMContentLoaded", function () {
+        const swiperWrapper = document.querySelector(".swiper-wrapper");
+        const newProductsGrid = document.getElementById("newProducts");
+        const hotProductsList = document.getElementById("hotProducts");
+
+        // 渲染轮播图
+        mallData.banners.forEach((banner) => {
+          const slide = document.createElement("div");
+          slide.className = "swiper-slide";
+          slide.innerHTML = `
+                    <img src="${banner.image}" alt="${banner.title}" class="slide-image" onerror="this.src='images/default-banner.jpg'">
+                `;
+          swiperWrapper.appendChild(slide);
+        });
+
+        // 初始化Swiper
+        new Swiper(".swiper-container", {
+          loop: true,
+          autoplay: {
+            delay: 3000,
+            disableOnInteraction: false,
+          },
+          pagination: {
+            el: ".swiper-pagination",
+            clickable: true,
+          },
+        });
+
+        // 渲染新品商品
+        mallData.newProducts.forEach((product) => {
+          newProductsGrid.innerHTML += createProductCard(product);
+        });
+
+        // 渲染推荐榜
+        mallData.hotProducts.forEach((product) => {
+          const item = document.createElement("div");
+          item.className = "cart-item";
+          item.onclick = () => navigateTo(`detail.html?id=${product.id}`);
+          item.innerHTML = `
+                    <div class="rank-number">${product.rank}</div>
+                    <img src="${product.image}" alt="${product.name}" class="cart-item-img" onerror="this.src='images/default-product.jpg'">
+                    <div class="cart-item-info">
+                        <h3 class="cart-item-title">${product.name}</h3>
+                        <div class="cart-item-price">${formatPrice(product.price)}</div>
+                        <div class="product-sales">已售${product.sales}件</div>
+                    </div>
+                `;
+          hotProductsList.appendChild(item);
+        });
+
+        // 添加 CSS
+        const style = document.createElement("style");
+        style.textContent = `
+                .rank-list { padding: 10px; }
+                .cart-item { position: relative; padding-left: 40px; }
+                .rank-number {
+                    position: absolute;
+                    left: 10px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    width: 30px;
+                    height: 30px;
+                    background: var(--jd-red);
+                    color: white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                }
+                .product-rank {
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    background: var(--jd-red);
+                    color: white;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    font-size: 12px;
+                }
+                /* 优化轮播图分页器位置 */
+                .swiper-pagination {
+                    bottom: 10px !important;
+                }
+                .swiper-container {
+                    margin-bottom: 20px;
+                    border-radius: 12px;
+                    overflow: hidden;
+                }
+                .slide-image {
+                    width: 100%;
+                    height: 180px;
+                    object-fit: cover;
+                }
+                /* 优化模块间距 */
+                .container {
+                    margin-bottom: 25px;
+                    padding: 0 15px;
+                }
+                .module-title {
+                    font-size: 18px;
+                    font-weight: 600;
+                    margin: 20px 0 15px 0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                /* 优化瀑布流间距 */
+                .waterfall {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 15px;
+                    padding: 5px;
+                }
+                /* 优化推荐榜间距 */
+                .rank-list .cart-item {
+                    margin-bottom: 15px;
+                    padding: 10px;
+                    background: #fff;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                }
+                /* 主内容区域增加底部间距 */
+                .main-content {
+                    padding-bottom: 80px;
+                }
+            `;
+        document.head.appendChild(style);
+      });
+    </script>
+  </body>
+</html>
